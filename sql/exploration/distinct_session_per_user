@@ -1,0 +1,14 @@
+-- How many distinct sessions does each user have per calendar day?
+SELECT
+  user_pseudo_id,
+  event_date,
+  COUNT(DISTINCT CONCAT(user_pseudo_id,
+                        (SELECT value.int_value 
+                         FROM UNNEST(event_params) 
+                         WHERE key = 'ga_session_id'))) AS sessions_per_day
+FROM
+  `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+  WHERE user_pseudo_id IS NOT NULL
+GROUP BY user_pseudo_id, event_date
+ORDER BY sessions_per_day DESC
+LIMIT 20;
