@@ -1,0 +1,55 @@
+CREATE OR REPLACE TABLE `real-time-purchase-propensity.mvp_propensity.purchase_features` AS
+WITH base_events AS (
+  SELECT
+    user_pseudo_id AS user_id,
+    PARSE_DATE('%Y%m%d', event_date) AS event_date,
+    event_name,
+    (SELECT value.string_value FROM UNNEST(event_params)
+     WHERE key = 'session_id') AS session_id,
+    device.category AS device_category,
+    traffic_source.medium AS traffic_medium
+  FROM
+    `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+  WHERE
+    _TABLE_SUFFIX BETWEEN '20210101' AND '20210131'  -- Limit to 1 month for dev
+),
+aggregated AS (
+  SELECT
+    user_id,
+    event_date,
+    device_category,
+    traffic_medium,
+    COUNT(DISTINCT session_id) AS sessions_per_user_day,
+    COUNTIF(event_name = 'page_view') AS page_views,
+    COUNTIF(event_name = 'view_item') AS view_item_events,
+    COUNTIF(event_name = 'add_to_cart') AS add_to_cart_events,
+    COUNTIF(event_name = 'begin_checkout') AS begin_checkout_events,
+    COUNTIF(event_name = 'purchase') AS purchase_events,
+    MIN(event_date) OVER (PARTITION BY user_id) AS first_seen_date,
+    SUM(COUNTIF(event_name = 'purchase')) OVER (
+      PARTITION BY user_id ORDER BY event_date ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+    ) AS prior_purchases
+  FROM base_events
+  GROUP BY user_id, event_date, device_category, traffic_medium
+),
+final AS (
+  SELECT
+    *,
+    DATE_DIFF(event_date, first_seen_date, DAY) AS days_since_first_seen,
+    IF(purchase_events > 0, 1, 0) AS label
+  FROM aggregated
+)
+SELECT
+  user_id,
+  event_date,
+  page_views,
+  add_to_cart_events,
+  begin_checkout_events,
+  device_category,
+  traffic_medium,
+  sessions_per_user_day,
+  view_item_events,
+  prior_purchases,
+  days_since_first_seen,
+  label
+FROM final;
