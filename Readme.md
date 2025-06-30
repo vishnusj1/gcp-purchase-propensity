@@ -2,7 +2,7 @@
 
 ### Architecture
 
-! [GCP Propensity Model MVP] (gcp_mvp_architecture.jpg)
+! [GCP Propensity Model MVP] (**gcp_mvp_architecture.jpg**)
 
 #### Setup instructions
 
