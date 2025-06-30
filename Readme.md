@@ -2,7 +2,7 @@
 
 ### Architecture
 
-! [GCP Propensity Model MVP] (**gcp_mvp_architecture.jpg**)
+! [GCP Propensity Model MVP] (https://github.com/vishnusj1/gcp-purchase-propensity/blob/main/gcp_mvp_propensity.jpg)
 
 #### Setup instructions
 
